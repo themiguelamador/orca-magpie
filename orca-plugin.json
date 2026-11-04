@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stablyai/orca/main/docs/schemas/plugins/orca-plugin.v2.schema.json",
+  "manifestVersion": 2,
+  "execution": "trusted-worker",
+  "id": "magpie",
+  "publisher": "mamb5",
+  "name": "Magpie for Orca",
+  "version": "0.1.0",
+  "description": "Shows every magpie account and quota window (Claude, Codex, Copilot, plans) in Orca's sidebar, with one-click account switching through the magpie CLI.",
+  "license": "MIT",
+  "repository": "https://github.com/MAMB5/orca-magpie",
+  "engines": { "orca": ">=1.4.248" },
+  "pluginApi": 1,
+  "main": "main.mjs",
+  "contributes": {
+    "commands": [
+      { "id": "refresh", "title": "Magpie: Refresh quotas now" },
+      { "id": "quota-terminal", "title": "Magpie: Type `magpie quota` into terminal", "when": "workspace" },
+      { "id": "switch-claude-next", "title": "Magpie: Type Claude switch to next account", "when": "workspace" },
+      { "id": "switch-codex-next", "title": "Magpie: Type Codex switch to next account", "when": "workspace" },
+      { "id": "check-gateway", "title": "Magpie: Type gateway health check", "when": "workspace" },
+      { "id": "install-gateway", "title": "Magpie: Type magpie install command", "when": "workspace" }
+    ],
+    "panels": [
+      { "id": "magpie", "title": "Magpie", "icon": "plug", "entry": "panel/magpie.html" }
+    ],
+    "statusBarItems": [
+      { "id": "quotas", "icon": "gauge", "text": "magpie", "tooltip": "Magpie quotas", "command": "refresh" }
+    ],
+    "settings": [
+      { "key": "gatewayUrl", "title": "Gateway URL", "type": "string", "default": "http://127.0.0.1:3425", "placeholder": "http://127.0.0.1:3425" },
+      { "key": "pollIntervalMs", "title": "Poll interval (ms)", "type": "integer", "default": 30000, "minimum": 5000, "maximum": 600000 },
+      { "key": "autoEnter", "title": "Press Return after typing a command into a terminal", "type": "boolean", "default": false },
+      { "key": "showStatusBar", "title": "Show the status bar item", "type": "boolean", "default": true }
+    ]
+  },
+  "capabilities": [
+    { "kind": "notifications:show" },
+    { "kind": "settings:own" },
+    { "kind": "storage:own" },
+    { "kind": "secrets:own" },
+    { "kind": "workspace:read" },
+    { "kind": "terminal:send" }
+  ]
+}

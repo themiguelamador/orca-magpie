@@ -1,0 +1,9 @@
+{
+  "name": "orca-magpie",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Orca plugin: magpie account and quota windows in the sidebar, with account switching through the magpie CLI.",
+  "license": "MIT",
+  "repository": "https://github.com/MAMB5/orca-magpie"
+}

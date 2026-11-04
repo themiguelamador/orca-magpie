@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magpie</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 12px;
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+  .head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  .head h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  .sub { font-size: 11px; opacity: .65; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  button {
+    font: inherit; font-size: 12px; padding: 4px 9px; border-radius: 6px;
+    border: 1px solid rgba(128,128,140,.45); background: transparent; color: inherit;
+    cursor: pointer;
+  }
+  button:hover { background: rgba(128,128,140,.15); }
+  button.primary { border-color: transparent; background: #3b6ea5; color: #fff; }
+  .msg { font-size: 11.5px; opacity: .8; margin: 0 0 10px; min-height: 1em; word-break: break-word; }
+  .keyrow { display: flex; gap: 6px; margin-bottom: 12px; }
+  .keyrow input {
+    flex: 1; min-width: 0; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 4px 7px; border-radius: 6px; border: 1px solid rgba(128,128,140,.45);
+    background: transparent; color: inherit;
+  }
+  .card {
+    border: 1px solid rgba(128,128,140,.35); border-radius: 8px;
+    padding: 9px 10px; margin-bottom: 8px;
+  }
+  .card .name { font-weight: 600; font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+  .badge {
+    font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 99px;
+    background: rgba(60,150,90,.18); color: #2e7d4f;
+  }
+  .meta { font-size: 11px; opacity: .7; margin-top: 2px; }
+  .win { margin-top: 7px; }
+  .win .lab { display: flex; justify-content: space-between; font-size: 11px; opacity: .85; }
+  .bar { height: 5px; border-radius: 99px; background: rgba(128,128,140,.25); margin-top: 3px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: 99px; background: #3b6ea5; }
+  .bar > i.warn { background: #c98a1b; }
+  .bar > i.hot  { background: #c0392b; }
+  .empty { opacity: .75; font-size: 12.5px; }
+  .err {
+    border: 1px solid rgba(192,57,43,.5); border-radius: 8px; padding: 9px 10px;
+    font-size: 12px; margin-bottom: 8px;
+  }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+  <div class="head"><h1>Magpie</h1><span class="sub" id="sub">…</span></div>
+
+  <div class="row">
+    <button class="primary" id="b-refresh">Refresh</button>
+    <button id="b-quota">quota → term</button>
+    <button id="b-claude">Claude → next</button>
+    <button id="b-codex">Codex → next</button>
+  </div>
+
+  <div class="keyrow">
+    <input id="key" type="password" placeholder="gateway key (optional)" spellcheck="false">
+    <button id="b-savekey">Save</button>
+    <button id="b-me">/me ↗</button>
+  </div>
+
+  <p class="msg" id="msg"></p>
+  <div id="cards"></div>
+
+<script>
+'use strict'
+const O = window.orca
+const $ = (id) => document.getElementById(id)
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+
+let gatewayUrl = 'http://127.0.0.1:3425'
+
+function say(t) { $('msg').textContent = t || '' }
+
+async function req(name, input) {
+  try { return await O.plugin.request(name, input, { timeoutMs: 20000 }) }
+  catch (err) { say('⚠ ' + err); return null }
+}
+
+function render(st) {
+  if (!st) { $('sub').textContent = 'first poll pending…'; return }
+  gatewayUrl = st.gatewayUrl || gatewayUrl
+  const ago = st.fetchedAt ? new Date(st.fetchedAt).toLocaleTimeString() : ''
+  $('sub').textContent = st.ok ? `${st.cardCount} card${st.cardCount === 1 ? '' : 's'} · ${ago}` : 'unreachable'
+
+  const box = $('cards')
+  if (!st.ok) {
+    box.innerHTML =
+      '<div class="err">' + esc(st.error || 'Gateway unreachable') + '</div>' +
+      '<p class="empty">Is magpie running? Install it on this machine:</p>' +
+      '<div class="row"><button id="b-install">Type install command</button></div>'
+    const bi = document.getElementById('b-install')
+    if (bi) bi.onclick = () => run('install')
+    return
+  }
+  if (!st.cards.length) {
+    box.innerHTML = '<p class="empty">No accounts on the gateway yet — add providers in magpie, then Refresh.</p>'
+    return
+  }
+  box.innerHTML = st.cards.map(cardHtml).join('')
+}
+
+function cardHtml(c) {
+  const wins = (c.windows || []).map((w) => {
+    const pct = w.usedPct == null ? null : w.usedPct
+    const cls = pct == null ? '' : pct >= 95 ? 'hot' : pct >= 80 ? 'warn' : ''
+    const right = []
+    if (pct != null) right.push(pct + '%')
+    if (w.resets) right.push(esc(w.resets))
+    return '<div class="win"><div class="lab"><span>' + esc(w.label || 'window') +
+      '</span><span>' + right.join(' · ') + '</span></div>' +
+      '<div class="bar"><i class="' + cls + '" style="width:' + (pct == null ? 0 : pct) + '%"></i></div></div>'
+  }).join('')
+
+  const meta = [c.plan, c.balance, c.lastServedAt ? 'served ' + esc(new Date(c.lastServedAt).toLocaleTimeString()) : null]
+    .filter(Boolean).join(' · ')
+
+  return '<div class="card"><div class="name">' + esc(c.name) +
+    (c.isServing ? ' <span class="badge">serving</span>' : '') + '</div>' +
+    (meta ? '<div class="meta">' + meta + '</div>' : '') +
+    (wins || '<div class="meta">no windows reported</div>') + '</div>'
+}
+
+async function refresh() {
+  say('refreshing…')
+  const res = await req('magpie.refresh')
+  if (res && res.status) { render(res.status); say('') }
+}
+
+async function run(kind) {
+  const res = await req('magpie.run', { kind })
+  if (res) say(res.ok ? res.message : '⚠ ' + (res.error || 'failed'))
+}
+
+$('b-refresh').onclick = refresh
+$('b-quota').onclick = () => run('quota')
+$('b-claude').onclick = () => run('switch-claude-next')
+$('b-codex').onclick = () => run('switch-codex-next')
+$('b-savekey').onclick = async () => {
+  const key = $('key').value.trim()
+  if (!key) { await req('magpie.clearKey'); say('key cleared'); return }
+  const res = await req('magpie.setKey', { key })
+  if (res && res.status) { render(res.status); say('key saved') }
+}
+$('b-me').onclick = async () => {
+  try { await O.shell.openExternal(gatewayUrl.replace(/\/+$/, '') + '/me') }
+  catch (err) { say('⚠ open /me: ' + err) }
+}
+
+;(async () => {
+  try { O.plugin.on('magpie.updated', render) } catch (err) { say('⚠ ' + err) }
+  const res = await req('magpie.status')
+  render(res && res.status)
+})()
+</script>
+</body>
+</html>
