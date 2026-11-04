@@ -210,6 +210,9 @@ async function publish(st, settings) {
   try { await orca.host.call('storage.set', { key: 'lastStatus', value: st }) } catch {}
   try { orca.panels.post('magpie.updated', st) } catch {}
   const line = statusLine(st)
+  // Status bar item returns once orca ships statusBarItems (1.4.248+);
+  // until the manifest re-adds it, skip the call when the method is absent.
+  if (orca.host.has && !orca.host.has('statusBar.update')) return
   try {
     await orca.host.call('statusBar.update', {
       id: 'quotas',

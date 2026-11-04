@@ -1,6 +1,6 @@
 {
   "name": "orca-magpie",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "Orca plugin: magpie account and quota windows in the sidebar, with account switching through the magpie CLI.",

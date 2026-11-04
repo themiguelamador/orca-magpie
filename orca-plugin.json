@@ -5,11 +5,11 @@
   "id": "magpie",
   "publisher": "themiguelamador",
   "name": "Magpie for Orca",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shows every magpie account and quota window (Claude, Codex, Copilot, plans) in Orca's sidebar, with one-click account switching through the magpie CLI.",
   "license": "MIT",
   "repository": "https://github.com/themiguelamador/orca-magpie",
-  "engines": { "orca": ">=1.4.248" },
+  "engines": { "orca": ">=1.4.246" },
   "pluginApi": 1,
   "main": "main.mjs",
   "contributes": {
@@ -23,9 +23,6 @@
     ],
     "panels": [
       { "id": "magpie", "title": "Magpie", "icon": "plug", "entry": "panel/magpie.html" }
-    ],
-    "statusBarItems": [
-      { "id": "quotas", "icon": "gauge", "text": "magpie", "tooltip": "Magpie quotas", "command": "refresh" }
     ],
     "settings": [
       { "key": "gatewayUrl", "title": "Gateway URL", "type": "string", "default": "http://127.0.0.1:3425", "placeholder": "http://127.0.0.1:3425" },
