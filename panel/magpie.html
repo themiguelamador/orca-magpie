@@ -123,8 +123,11 @@ function cardHtml(c) {
       '<div class="bar"><i class="' + cls + '" style="width:' + (pct == null ? 0 : pct) + '%"></i></div></div>'
   }).join('')
 
-  const meta = [c.plan, c.balance, c.lastServedAt ? 'served ' + esc(new Date(c.lastServedAt).toLocaleTimeString()) : null]
-    .filter(Boolean).join(' · ')
+  const meta = [
+    c.plan ? esc(c.plan) : null,
+    c.balance ? esc(c.balance) : null,
+    c.lastServedAt ? 'served ' + esc(new Date(c.lastServedAt).toLocaleTimeString()) : null,
+  ].filter(Boolean).join(' · ')
 
   return '<div class="card"><div class="name">' + esc(c.name) +
     (c.isServing ? ' <span class="badge">serving</span>' : '') + '</div>' +

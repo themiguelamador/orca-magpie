@@ -5,7 +5,7 @@
   "id": "magpie",
   "publisher": "themiguelamador",
   "name": "Magpie for Orca",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shows every magpie account and quota window (Claude, Codex, Copilot, plans) in Orca's sidebar, with one-click account switching through the magpie CLI.",
   "license": "MIT",
   "repository": "https://github.com/themiguelamador/orca-magpie",

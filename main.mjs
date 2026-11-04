@@ -16,11 +16,12 @@ let polling = false
 let lastStatus = null
 
 const TERMINAL_COMMANDS = {
-  quota: 'magpie quota',
-  'switch-claude-next': 'magpie accounts switch claude next',
-  'switch-codex-next': 'magpie accounts switch codex next',
-  'check-gateway': 'curl -sS -m 5 http://127.0.0.1:3425/v1/magpie/quotas | head -c 400',
-  install: "curl -fsSL https://usemagpie.ai/install.sh | sh",
+  quota: () => 'magpie quota',
+  'switch-claude-next': () => 'magpie accounts switch claude next',
+  'switch-codex-next': () => 'magpie accounts switch codex next',
+  'check-gateway': (s) =>
+    `curl -sS -m 5 ${String(s.gatewayUrl || 'http://127.0.0.1:3425').replace(/\/+$/, '')}/v1/magpie/quotas | head -c 400`,
+  install: () => 'curl -fsSL https://usemagpie.ai/install.sh | sh',
 }
 
 export default function activate(api) {
@@ -80,9 +81,12 @@ function pickTerminal() {
   const terminals = normalizeTerminals(lastContext)
   if (!terminals.length) return null
   // Prefer a plain shell over an agent pane: typing into a Claude Code
-  // pane would feed the agent, not the shell.
-  const looksAgent = (t) => /claude|codex|gemini|grok|hermes|opencode|pi\b|omp|aider|crush/i.test(t.title || '')
-  return [...terminals].reverse().find((t) => !looksAgent(t)) || terminals[terminals.length - 1]
+  // pane would feed the agent, not the shell. If every terminal looks
+  // like an agent pane, type nowhere — never fall back to an agent pane.
+  const looksAgent = (t) =>
+    /\b(claude|codex|gemini|grok|hermes|opencode|oh-my-pi|omp|pi|aider|crush)\b/i.test(t.title || '')
+  const shell = [...terminals].reverse().find((t) => !looksAgent(t))
+  return shell || null
 }
 
 function normalizeTerminals(ctx) {
@@ -99,15 +103,20 @@ function normalizeTerminals(ctx) {
 }
 
 async function runInTerminal(kind) {
-  const text = TERMINAL_COMMANDS[kind]
+  const settings = await getSettings()
+  const make = TERMINAL_COMMANDS[kind]
+  const text = typeof make === 'function' ? make(settings) : make
   if (!text) return { ok: false, error: `Unknown command kind: ${kind}` }
+  if (!lastContext) {
+    // Seed the terminal list if no workspace.changed has arrived yet.
+    try { setContext(await orca.host.call('workspace.readContext')) } catch {}
+  }
   const term = pickTerminal()
   if (!term) {
-    const msg = 'No terminal in the focused workspace — open a shell terminal first.'
+    const msg = 'No shell terminal in the focused workspace — open one (not an agent pane) first.'
     await notify('Magpie', msg)
     return { ok: false, error: msg }
   }
-  const settings = await getSettings()
   let accepted = false
   try {
     const res = await orca.host.call('terminal.sendText', {
