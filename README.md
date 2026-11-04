@@ -41,7 +41,7 @@ git URL** and paste this repository's URL.
 While developing:
 
 ```sh
-git clone https://github.com/MAMB5/orca-magpie
+git clone https://github.com/themiguelamador/orca-magpie
 cd orca-magpie
 orca plugin dev load .        # add --approve on the re-run it prints
 ```
