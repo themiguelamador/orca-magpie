@@ -9,19 +9,43 @@
 // off by default) lets Return be pressed for you.
 
 import { fetchQuotas, normalizeQuotas } from './lib/gateway.mjs'
+import { accessSync, constants } from 'node:fs'
+import { join } from 'node:path'
 
 let orca = null
 let pollTimer = null
 let polling = false
 let lastStatus = null
+let cachedBin
 
 const TERMINAL_COMMANDS = {
-  quota: () => 'magpie quota',
-  'switch-claude-next': () => 'magpie accounts switch claude next',
-  'switch-codex-next': () => 'magpie accounts switch codex next',
+  quota: (s, bin) => `${bin} quota`,
+  'switch-claude-next': (s, bin) => `${bin} accounts switch claude next`,
+  'switch-codex-next': (s, bin) => `${bin} accounts switch codex next`,
   'check-gateway': (s) =>
     `curl -sS -m 5 ${String(s.gatewayUrl || 'http://127.0.0.1:3425').replace(/\/+$/, '')}/v1/magpie/quotas | head -c 400`,
   install: () => 'curl -fsSL https://usemagpie.ai/install.sh | sh',
+}
+
+// The magpie CLI is the same binary as the app. Resolve it for the text we
+// type: plain `magpie` when it is on PATH, else the app-bundle path, so a
+// GUI-only install (manual download, no symlink — #2563's gap) still works.
+export function resolveMagpieBin(refresh = false) {
+  if (!refresh && cachedBin !== undefined) return cachedBin
+  cachedBin = null
+  for (const dir of String(process.env.PATH || '').split(':')) {
+    if (!dir) continue
+    if (isExec(join(dir, 'magpie'))) { cachedBin = 'magpie'; return cachedBin }
+  }
+  const home = process.env.HOME || ''
+  for (const p of ['/Applications/magpie.app/Contents/MacOS/magpie', join(home, 'Applications/magpie.app/Contents/MacOS/magpie')]) {
+    if (isExec(p)) { cachedBin = p; return cachedBin }
+  }
+  return cachedBin
+}
+
+function isExec(p) {
+  try { accessSync(p, constants.X_OK); return true } catch { return false }
 }
 
 export default function activate(api) {
@@ -104,8 +128,9 @@ function normalizeTerminals(ctx) {
 
 async function runInTerminal(kind) {
   const settings = await getSettings()
+  const bin = resolveMagpieBin() || 'magpie'
   const make = TERMINAL_COMMANDS[kind]
-  const text = typeof make === 'function' ? make(settings) : make
+  const text = typeof make === 'function' ? make(settings, bin) : make
   if (!text) return { ok: false, error: `Unknown command kind: ${kind}` }
   if (!lastContext) {
     // Seed the terminal list if no workspace.changed has arrived yet.

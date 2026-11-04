@@ -78,8 +78,14 @@ typed into a terminal is always the source of truth.
 - One gateway per Orca install (the local one by default). Remote/SSH
   hosts like grazr's engine model are a natural next step.
 - Switching uses `magpie accounts switch <agent> next` on this machine;
-  per-workspace account pinning (per-worktree gateway keys restricted
-  with `magpie gateway-key accounts`) is the planned v0.2.
+  the CLI is resolved from PATH, falling back to the app-bundle binary
+  (`/Applications/magpie.app/Contents/MacOS/magpie`) so a GUI-only install
+  works too. Per-workspace account pinning (per-worktree gateway keys
+  restricted with `magpie gateway-key accounts`) is the planned v0.2. An
+  upstream proposal
+  ([yetone/magpie#5132](https://github.com/yetone/magpie/issues/5132) —
+  `POST /v1/magpie/accounts/switch`) would let switching become a direct
+  HTTP call with no terminal involved.
 - When orca#36400 (`commands.execute`) lands, typed-command actions
   switch to it and the Return-to-confirm dance disappears.
 
