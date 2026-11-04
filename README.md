@@ -11,10 +11,8 @@ with one-click account switching through the magpie CLI.
   quota windows (use %, reset), which account is currently serving, and a
   Refresh button. Polls `GET <gateway>/v1/magpie/quotas` — the same data
   `magpie quota` prints.
-- **Status bar item** `magpie NN%` (tightest window; amber ≥ 80%, red ≥
-  95%): returns once orca ships `statusBarItems` (release after
-  1.4.247); the worker already guards the call with
-  `host.has('statusBar.update')`.
+- **Status bar item**: `magpie NN%` — the tightest window across all
+  cards (amber ≥ 80%, red ≥ 95%). Click to refresh. Needs orca ≥ 1.4.248.
 - **Palette commands**: refresh, type `magpie quota` into a terminal,
   type `magpie accounts switch claude|codex next`, type a gateway health
   check, type the magpie install command.
@@ -30,9 +28,8 @@ an agent pane, so it isn't fed to a running agent.
 
 ## Requirements
 
-- Orca **≥ 1.4.246** (current stable) with the plugin system enabled
-  (Settings → Plugins). The status bar item needs the first release
-  after 1.4.247; everything else works today.
+- Orca **≥ 1.4.248** with the plugin system enabled
+  (Settings → Plugins).
 - magpie installed and its gateway running (default
   `http://127.0.0.1:3425`). A local gateway needs no key.
 
@@ -60,7 +57,7 @@ Orca checkout) or `orca plugin check .` validate the manifest strictly.
 | `gatewayUrl` | `http://127.0.0.1:3425` | Base URL of the magpie gateway |
 | `pollIntervalMs` | `30000` | How often the worker polls (5 s – 10 min) |
 | `autoEnter` | `false` | Press Return after typing a command |
-| `showStatusBar` | `true` | Show the status bar item (from orca's release after 1.4.247) |
+| `showStatusBar` | `true` | Show the status bar item |
 
 ## How it works
 
